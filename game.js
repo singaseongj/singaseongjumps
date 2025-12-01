@@ -8,7 +8,7 @@ canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
 // API configuration
-const API_URL = 'https://script.google.com/macros/s/AKfycbyXBKcJcKVfT1IppcvNEUu-bQxiaUoNJLN2WMffGWJ-b80lMBAobrnSUXI-NuYIwjNu/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzEQoVQyPCJM8AldCCfKg7IjohALeJSQCQgzH4GWa5FaxUz3g079RaU_0sbrw58QCA-/exec';
 const DEFAULT_SCORE_HASH = 'ef9b9dd5820f4a98c58cb19a2da0f8a1c0f9084acecaabbea620dd6fb2e52cb4';
 const SECRET = document.body?.dataset?.scoreHash || DEFAULT_SCORE_HASH;
 
@@ -172,7 +172,7 @@ function createObstacle() {
     } else if (type === 'flyingBox') {
         obstacle.width = 40;
         obstacle.height = 40;
-        obstacle.y = ground.y - 140; // Flying higher
+        obstacle.y = ground.y - 80; // Lower height - requires ducking to avoid
     }
 
     obstacles.push(obstacle);
