@@ -24,6 +24,7 @@ canvas.height = CANVAS_HEIGHT;
 
 // API configuration
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXBKcJcKVfT1IppcvNEUu-bQxiaUoNJLN2WMffGWJ-b80lMBAobrnSUXI-NuYIwjNu/exec';
+const DEFAULT_SCORE_KEY = 'ef9b9dd5820f4a98c58cb19a2da0f8a1c0f9084acecaabbea620dd6fb2e52cb4';
 const SCORE_HASH_PLACEHOLDER = '__SCORE_KEY_HASH__';
 const SCORE_KEY_PLACEHOLDER = '__SCORE_KEY__';
 let SECRET = null;
@@ -42,10 +43,13 @@ async function hashSecret(secretKey) {
 
 async function initializeSecret() {
     const { scoreHash, scoreKey } = document.body?.dataset || {};
+    const resolvedKey = scoreKey && scoreKey !== SCORE_KEY_PLACEHOLDER
+        ? scoreKey
+        : DEFAULT_SCORE_KEY;
 
     // If the raw secret key is provided, hash it so we never expose the plain key in requests.
-    if (scoreKey && scoreKey !== SCORE_KEY_PLACEHOLDER) {
-        SECRET = await hashSecret(scoreKey);
+    if (resolvedKey) {
+        SECRET = await hashSecret(resolvedKey);
         return SECRET;
     }
 
@@ -136,11 +140,14 @@ document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
 const jumpButton = document.getElementById('jumpBtn');
 const duckButton = document.getElementById('duckBtn');
+const mainMenu = document.getElementById('mainMenu');
 const playAgainButton = document.getElementById('playAgainBtn');
 const highscoreButton = document.getElementById('highscoreBtn');
 const submitScoreButton = document.getElementById('submitScore');
 const backButton = document.getElementById('backBtn');
 const playerNameInput = document.getElementById('playerName');
+const startGameButton = document.getElementById('startGameBtn');
+const menuHighscoreButton = document.getElementById('menuHighscoreBtn');
 
 const handleJumpInput = (e) => {
     e?.preventDefault?.();
@@ -169,6 +176,8 @@ duckButton.addEventListener('click', handleDuckPress);
 duckButton.addEventListener('touchend', handleDuckRelease, { passive: false });
 duckButton.addEventListener('mouseup', handleDuckRelease);
 duckButton.addEventListener('mouseleave', handleDuckRelease);
+startGameButton.addEventListener('click', () => { playButtonSound(); startGame(); });
+menuHighscoreButton.addEventListener('click', () => { playButtonSound(); showHighscores(); });
 playAgainButton.addEventListener('click', () => { playButtonSound(); restartGame(); });
 highscoreButton.addEventListener('click', () => { playButtonSound(); showHighscores(); });
 submitScoreButton.addEventListener('click', () => { playButtonSound(); submitScore(); });
@@ -186,6 +195,21 @@ canvas.addEventListener('click', () => {
         startGame();
     }
 });
+
+function showMainMenu() {
+    if (animationId) {
+        cancelAnimationFrame(animationId);
+    }
+    mainMenu.classList.add('active');
+    document.getElementById('highscoreScreen').classList.remove('active');
+    document.getElementById('gameOverScreen').classList.remove('active');
+    gameRunning = false;
+    gameOver = false;
+}
+
+function hideMainMenu() {
+    mainMenu.classList.remove('active');
+}
 
 // Keyboard controls
 function handleKeyDown(e) {
@@ -229,6 +253,8 @@ function unduck() {
 
 // Start game
 function startGame() {
+    hideMainMenu();
+    document.getElementById('highscoreScreen').classList.remove('active');
     gameRunning = true;
     gameOver = false;
     score = 0;
@@ -686,6 +712,7 @@ async function loadHighScoreFromAPI() {
 
 // Show highscores using JSONP
 async function showHighscores() {
+    hideMainMenu();
     document.getElementById('highscoreScreen').classList.add('active');
     document.getElementById('gameOverScreen').classList.remove('active');
 
@@ -739,9 +766,7 @@ async function showHighscores() {
 // Hide highscores
 function hideHighscores() {
     document.getElementById('highscoreScreen').classList.remove('active');
-    document.getElementById('gameOverScreen').classList.remove('active');
-    gameOver = false;
-    gameRunning = false;
+    showMainMenu();
 }
 
 // Escape HTML to prevent XSS
