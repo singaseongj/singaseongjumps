@@ -8,7 +8,7 @@ canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
 // API configuration
-const API_URL = 'https://script.google.com/macros/s/AKfycbzYVU6JNYUr0aOKsOWFRK4TkJ5E9dsTvl4IK5AwxtNulvbHaAmbm2BoEkMX2pCo4GMl/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyXBKcJcKVfT1IppcvNEUu-bQxiaUoNJLN2WMffGWJ-b80lMBAobrnSUXI-NuYIwjNu/exec';
 const DEFAULT_SCORE_HASH = 'ef9b9dd5820f4a98c58cb19a2da0f8a1c0f9084acecaabbea620dd6fb2e52cb4';
 const SECRET = document.body?.dataset?.scoreHash || DEFAULT_SCORE_HASH;
 
@@ -20,16 +20,16 @@ let gameRunning = false;
 let gameOver = false;
 let score = 0;
 let highScore = 0;
-let gameSpeed = 5;
+let gameSpeed = 7; // Start faster (was 5)
 let obstacleTimer = 0;
 let obstacleInterval = 100;
 let animationFrame = 0;
 
-// Speed progression constants
-const MAX_GAME_SPEED = 15;
-const SPEED_INCREMENT = 0.001;
-const MIN_OBSTACLE_INTERVAL = 50;
-const OBSTACLE_INTERVAL_DECREMENT = 0.005;
+// Speed progression constants - Much faster progression
+const MAX_GAME_SPEED = 18;
+const SPEED_INCREMENT = 0.002; // Increased from 0.001
+const MIN_OBSTACLE_INTERVAL = 40;
+const OBSTACLE_INTERVAL_DECREMENT = 0.008; // Increased from 0.005
 
 // Chicken character
 const chicken = {
@@ -129,15 +129,17 @@ function startGame() {
     gameRunning = true;
     gameOver = false;
     score = 0;
-    gameSpeed = 5;
+    gameSpeed = 7; // Start faster
     obstacleInterval = 100;
     obstacles = [];
     obstacleTimer = 0;
+    animationFrame = 0;
     chicken.y = chicken.normalY;
     chicken.velocity = 0;
     chicken.jumping = false;
     chicken.ducking = false;
     document.getElementById('gameOverScreen').classList.remove('active');
+    updateScore(); // Reset score display
     gameLoop();
 }
 
@@ -181,13 +183,15 @@ function createObstacle() {
     } else if (type === 'flyingBox') {
         obstacle.width = 40;
         obstacle.height = 40;
-        // Random height variation: sometimes low (duck), sometimes medium-high (jump)
+        // Much more height variation - from very low to very high
         const heights = [
-            ground.y - 70,   // Low - must duck
-            ground.y - 75,   // Low-medium - must duck
-            ground.y - 95,   // Medium - can duck or jump
-            ground.y - 110,  // Medium-high - should jump
-            ground.y - 120   // High - must jump
+            ground.y - 65,   // Very low - must duck
+            ground.y - 75,   // Low - must duck
+            ground.y - 90,   // Medium-low - can duck or jump
+            ground.y - 105,  // Medium - should jump
+            ground.y - 120,  // High - must jump
+            ground.y - 135,  // Very high - must jump high
+            ground.y - 145   // Extremely high - maximum jump needed
         ];
         obstacle.y = heights[Math.floor(Math.random() * heights.length)];
     }
