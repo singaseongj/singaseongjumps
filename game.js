@@ -558,14 +558,36 @@ function endGame() {
     document.getElementById('finalScore').textContent = Math.floor(score);
     document.getElementById('gameOverScreen').classList.add('active');
     document.getElementById('playerName').value = '';
+    const nameError = document.getElementById('playerNameError');
+    if (nameError) {
+        nameError.textContent = '';
+    }
+}
+
+function setPlayerNameError(message) {
+    const errorElement = document.getElementById('playerNameError');
+    if (errorElement) {
+        errorElement.textContent = message;
+    }
 }
 
 // Submit score to API using JSONP to avoid CORS
 async function submitScore() {
-    const playerName = document.getElementById('playerName').value.trim();
+    const playerNameInput = document.getElementById('playerName');
+    const playerName = playerNameInput.value.trim();
+    const validNamePattern = /^[A-Za-z가-힣]+$/;
+
+    setPlayerNameError('');
 
     if (!playerName) {
-        alert('Please enter your name!');
+        setPlayerNameError('Please enter your name.');
+        playerNameInput.focus();
+        return;
+    }
+
+    if (!validNamePattern.test(playerName)) {
+        setPlayerNameError('Use only English or Korean letters (no spaces or symbols).');
+        playerNameInput.focus();
         return;
     }
 
