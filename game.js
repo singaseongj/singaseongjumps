@@ -47,13 +47,8 @@ async function initializeSecret() {
         return SECRET;
     }
 
-    const rawSecret = document.body?.dataset?.scoreKey || window.SCORE_KEY;
-    if (rawSecret && rawSecret !== SCORE_KEY_PLACEHOLDER) {
-        SECRET = await hashSecret(rawSecret);
-        document.body.dataset.scoreHash = SECRET;
-        return SECRET;
-    }
-
+    // The workflow's job is to replace the placeholder in index.html with the hash.
+    // If it's still the placeholder, or missing, we fail.
     throw new Error('Score hash is not configured. Please set SCORE_KEY in the environment.');
 }
 
