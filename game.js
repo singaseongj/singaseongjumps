@@ -9,7 +9,7 @@ canvas.height = CANVAS_HEIGHT;
 
 // API configuration
 const API_URL = 'https://script.google.com/macros/s/AKfycbwor_TGA2cHvWrIBT20FbAUJNT_qHuTAbs1A99wWqDRQP_Z0l35IVWuomMzhPZWB17v/exec';
-const SECRET = 'umps7170!';
+const SECRET = document.body?.dataset?.scoreHash || 'SCORE_KEY';
 
 // Game state
 let gameRunning = false;
