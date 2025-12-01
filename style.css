@@ -55,8 +55,10 @@ body::before {
 
 .game-container {
     position: relative;
-    width: 98vw;
-    height: 95vh;
+    width: min(1100px, 96vw);
+    max-width: 1200px;
+    min-height: 620px;
+    max-height: 90vh;
     background: var(--bg-color);
     border-radius: 20px;
     box-shadow:
@@ -65,6 +67,9 @@ body::before {
         inset 0 0 100px rgba(255, 255, 255, 0.2);
     overflow: hidden;
     padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
 .game-header {
@@ -115,12 +120,14 @@ body::before {
 #gameCanvas {
     display: block;
     width: 100%;
+    height: clamp(380px, 60vh, 540px);
     background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 100%);
     border-radius: 15px;
-    box-shadow: 
+    box-shadow:
         inset 0 -5px 20px rgba(0, 0, 0, 0.1),
         0 5px 15px rgba(0, 0, 0, 0.2);
     cursor: pointer;
+    aspect-ratio: 16 / 9;
 }
 
 .mobile-controls {
@@ -190,13 +197,15 @@ body::before {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(45, 49, 66, 0.95);
+    background: rgba(45, 49, 66, 0.92);
     backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     display: none;
     justify-content: center;
     align-items: center;
     z-index: 100;
     border-radius: 20px;
+    padding: 24px;
 }
 
 .game-over-screen.active, .highscore-screen.active {
@@ -211,11 +220,11 @@ body::before {
 
 .game-over-content, .highscore-content {
     background: white;
-    padding: 40px;
+    padding: clamp(28px, 3vw, 48px);
     border-radius: 20px;
     text-align: center;
-    max-width: 400px;
-    width: 90%;
+    max-width: 560px;
+    width: min(92vw, 560px);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     animation: slideUp 0.4s ease-out;
 }
@@ -477,13 +486,35 @@ body::before {
 @media (min-width: 601px) and (max-width: 900px) {
     .game-container {
         width: 95vw;
-        height: 90vh;
+        max-height: 88vh;
+    }
+
+    #gameCanvas {
+        height: clamp(360px, 55vh, 500px);
     }
 
     .control-btn {
         max-width: 150px;
         padding: 15px;
         font-size: 16px;
+    }
+}
+
+@media (min-width: 901px) {
+    body {
+        padding: 30px;
+    }
+
+    .game-container {
+        gap: 20px;
+    }
+
+    #gameCanvas {
+        height: clamp(420px, 58vh, 580px);
+    }
+
+    .game-over-content, .highscore-content {
+        max-width: 600px;
     }
 }
 
@@ -497,8 +528,9 @@ body::before {
     .game-container {
         padding: 12px 10px 16px;
         width: 100%;
-        max-width: 520px;
+        max-width: 560px;
         height: auto;
+        min-height: auto;
         max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
         border-radius: 16px;
         display: flex;
@@ -519,9 +551,10 @@ body::before {
     #gameCanvas {
         flex: 0 1 auto;
         width: 100%;
-        aspect-ratio: 2 / 1;
+        aspect-ratio: 16 / 9;
         height: auto;
-        max-height: 65vh;
+        max-height: 62vh;
+        min-height: 260px;
     }
 
     .mobile-controls {
