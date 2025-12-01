@@ -8,7 +8,7 @@ canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
 // API configuration
-const API_URL = 'https://script.google.com/macros/s/AKfycbwor_TGA2cHvWrIBT20FbAUJNT_qHuTAbs1A99wWqDRQP_Z0l35IVWuomMzhPZWB17v/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyXBKcJcKVfT1IppcvNEUu-bQxiaUoNJLN2WMffGWJ-b80lMBAobrnSUXI-NuYIwjNu/exec';
 const DEFAULT_SCORE_HASH = 'ef9b9dd5820f4a98c58cb19a2da0f8a1c0f9084acecaabbea620dd6fb2e52cb4';
 const SECRET = document.body?.dataset?.scoreHash || DEFAULT_SCORE_HASH;
 
