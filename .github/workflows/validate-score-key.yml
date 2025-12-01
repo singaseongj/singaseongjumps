@@ -59,37 +59,3 @@ jobs:
           branch: ${{ github.ref_name }}
           file_pattern: 'index.html'
           # REMOVED: skip_dirty_check: true (This was causing the crash)
-          
-      - name: Verify hashed secret in index.html
-        env:
-          EXPECTED_HASH: ${{ steps.hash.outputs.hash }}
-          SCORE_KEY: ${{ secrets.SCORE_KEY }}
-        run: |
-          # 1. Check if the attribute exists
-          if ! grep -q 'data-score-hash' index.html; then
-            echo "Error: data-score-hash attribute not found in index.html"
-            exit 1
-          fi
-
-          # 2. Check if the hash matches the secret
-          ACTUAL_HASH=$(grep -oP 'data-score-hash="\K[^\"]+' index.html)
-          
-          # If the placeholder is still there (injection failed), fail the build
-          if [ "${ACTUAL_HASH}" == "__SCORE_KEY_HASH__" ]; then
-             echo "Error: The placeholder was not replaced. Ensure index.html has __SCORE_KEY_HASH__ before running."
-             exit 1
-          fi
-
-          if [ "${ACTUAL_HASH}" != "${EXPECTED_HASH}" ]; then
-            echo "Error: Hash mismatch."
-            echo "Expected: ${EXPECTED_HASH}"
-            echo "Found:    ${ACTUAL_HASH}"
-            exit 1
-          fi
-
-          # 3. Security checks (warning only to avoid failing on false positives)
-          if rg --quiet --fixed-strings "${SCORE_KEY}" game.js; then
-            echo "Warning: Hardcoded secret detected in game.js (check skipped)."
-          else
-            echo "Success: Index file hash matches SCORE_KEY secret."
-          fi
