@@ -23,7 +23,7 @@ canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
 // API configuration
-const API_URL = 'https://script.google.com/macros/s/AKfycbxx31bXZZ-5sxTWksEIoJx9VLL3ed_yLvwvSsjO9iXruviQ81GPYP76CUBcg3Ctdgru/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbx_bxMUS3fB___EOFkteMOM58RsFhCNjzT-R7LKRlS_nbF88rNXoxZgzK3F4xKGYWB6/exec';
 
 /**
  * GET endpoint
