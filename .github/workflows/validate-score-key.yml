@@ -1,6 +1,6 @@
 name: Validate score key hash
 
-# Set permissions to allow the workflow to write/commit changes
+# Allow the workflow to write to the repository
 permissions:
   contents: write
 
@@ -18,7 +18,6 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
       
-      # --- FIX 1: Install ripgrep (rg) ---
       - name: Install ripgrep (rg) for verification
         run: |
           sudo apt-get update
@@ -41,50 +40,57 @@ jobs:
           HASH=$(printf '%s' "${SCORE_KEY}" | sha256sum | cut -d' ' -f1)
           echo "hash=${HASH}" >> "$GITHUB_OUTPUT"
 
-      # --- FIX 2: Use an alternative SED delimiter (@) ---
       - name: Inject hash into index.html
         env:
           SCORE_KEY_HASH: ${{ steps.hash.outputs.hash }}
         run: |
+          # Only run sed if the placeholder exists
           if grep -q "__SCORE_KEY_HASH__" index.html; then
-            # Using '@' instead of '/' as the delimiter for safety
+            echo "Placeholder found. Injecting hash..."
             sed -i "s@__SCORE_KEY_HASH__@${SCORE_KEY_HASH}@g" index.html
+          else
+            echo "WARNING: Placeholder __SCORE_KEY_HASH__ not found in index.html. No changes made."
           fi
 
-      # --- FIX 3: Commit the changed file for deployment ---
       - name: Commit index.html changes and push
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "Build: Inject SCORE_KEY hash"
-          branch: ${{ github.ref_name }} # Use the current branch name (e.g., main)
+          branch: ${{ github.ref_name }}
           file_pattern: 'index.html'
-          # Set `skip_dirty_check: true` to ensure the file is always committed if changed
-          skip_dirty_check: true 
-
+          # REMOVED: skip_dirty_check: true (This was causing the crash)
+          
       - name: Verify hashed secret in index.html
         env:
           EXPECTED_HASH: ${{ steps.hash.outputs.hash }}
           SCORE_KEY: ${{ secrets.SCORE_KEY }}
         run: |
+          # 1. Check if the attribute exists
           if ! grep -q 'data-score-hash' index.html; then
-            echo "data-score-hash attribute not found in index.html"
-            exit 1
-          fi
-          # Note: grep -oP is a GNU extension, but should work on ubuntu-latest
-          ACTUAL_HASH=$(grep -oP 'data-score-hash="\K[^\"]+' index.html)
-          if [ "${ACTUAL_HASH}" != "${EXPECTED_HASH}" ]; then
-            echo "Hash mismatch. Expected ${EXPECTED_HASH} but found ${ACTUAL_HASH}."
-            exit 1
-          fi
-          # rg (ripgrep) is now installed and should work here:
-          if rg --quiet --fixed-strings "${SCORE_KEY}" game.js; then
-            echo "Hardcoded secret detected in game.js"
-            exit 1
-          fi
-          if rg --quiet "__SCORE_KEY_HASH__" index.html; then
-            echo "Score hash placeholder still present in index.html."
+            echo "Error: data-score-hash attribute not found in index.html"
             exit 1
           fi
 
-      - name: Display hash validation result
-        run: echo "Index file hash matches SCORE_KEY secret."
+          # 2. Check if the hash matches the secret
+          ACTUAL_HASH=$(grep -oP 'data-score-hash="\K[^\"]+' index.html)
+          
+          # If the placeholder is still there (injection failed), fail the build
+          if [ "${ACTUAL_HASH}" == "__SCORE_KEY_HASH__" ]; then
+             echo "Error: The placeholder was not replaced. Ensure index.html has __SCORE_KEY_HASH__ before running."
+             exit 1
+          fi
+
+          if [ "${ACTUAL_HASH}" != "${EXPECTED_HASH}" ]; then
+            echo "Error: Hash mismatch."
+            echo "Expected: ${EXPECTED_HASH}"
+            echo "Found:    ${ACTUAL_HASH}"
+            exit 1
+          fi
+
+          # 3. Security checks
+          if rg --quiet --fixed-strings "${SCORE_KEY}" game.js; then
+            echo "Error: Hardcoded secret detected in game.js"
+            exit 1
+          fi
+
+          echo "Success: Index file hash matches SCORE_KEY secret."
