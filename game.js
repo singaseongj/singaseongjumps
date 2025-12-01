@@ -25,6 +25,11 @@ let obstacleTimer = 0;
 let obstacleInterval = 100;
 let animationFrame = 0;
 
+const MAX_GAME_SPEED = 12;
+const SPEED_INCREMENT = 0.003;
+const MIN_OBSTACLE_INTERVAL = 60;
+const OBSTACLE_INTERVAL_DECREMENT = 0.02;
+
 // Chicken character
 const chicken = {
     x: 100,
@@ -200,10 +205,13 @@ function updateObstacles() {
         }
     });
 
-    // Increase difficulty over time
-    if (score > 0 && score % 100 === 0) {
-        if (gameSpeed < 12) gameSpeed += 0.1;
-        if (obstacleInterval > 60) obstacleInterval -= 1;
+    // Increase difficulty over time gradually
+    if (gameSpeed < MAX_GAME_SPEED) {
+        gameSpeed = Math.min(MAX_GAME_SPEED, gameSpeed + SPEED_INCREMENT);
+    }
+
+    if (obstacleInterval > MIN_OBSTACLE_INTERVAL) {
+        obstacleInterval = Math.max(MIN_OBSTACLE_INTERVAL, obstacleInterval - OBSTACLE_INTERVAL_DECREMENT);
     }
 }
 
@@ -541,7 +549,7 @@ function showHighscores() {
 // Hide highscores
 function hideHighscores() {
     document.getElementById('highscoreScreen').classList.remove('active');
-    document.getElementById('gameOverScreen').classList.add('active');
+    startGame();
 }
 
 // Escape HTML to prevent XSS
