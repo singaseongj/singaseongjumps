@@ -26,19 +26,17 @@ canvas.height = CANVAS_HEIGHT;
 const API_URL = 'https://script.google.com/macros/s/AKfycby8-mQbxKhSyxqIcr2WRs0X4dQdGzUE5DE2Ob0rFbLk7madDPn52TDjG_URPJDJOlDL/exec';
 
 /**
- * GET endpoint
+ * API endpoints
  * Examples:
- * 1) Get highscores:
+ * 1) Get highscores (JSONP):
  *    `${API_URL}?action=getScores&callback=myCallback`
  *
- * 2) Add score via POST:
- *    fetch(API_URL, {
- *      method: 'POST',
- *      headers: { 'Content-Type': 'application/json' },
- *      body: JSON.stringify({ action: 'addScore', name: 'Alice', score: 100 })
- *    })
+ * 2) Add score (JSONP to avoid CORS issues on the GAS endpoint):
+ *    `${API_URL}?action=addScore&name=Alice&score=100&callback=myCallback`
  *
- * POST endpoint accepts JSON body with `action`, `name`, and `score` fields.
+ * POST requests are supported by the backend, but the live deployment blocks
+ * cross-origin preflight checks. Use JSONP from the client unless CORS headers
+ * are enabled on the Apps Script deployment.
  */
 
 // Game state
@@ -562,7 +560,7 @@ function endGame() {
     document.getElementById('playerName').value = '';
 }
 
-// Submit score to API using POST
+// Submit score to API using JSONP (avoids CORS issues)
 async function submitScore() {
     const playerName = document.getElementById('playerName').value.trim();
 
@@ -576,41 +574,42 @@ async function submitScore() {
     submitBtn.textContent = 'Submitting...';
     showHighscores();
 
-    try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                action: 'addScore',
-                name: playerName,
-                score: Math.floor(score)
-            })
-        });
+    const callbackName = 'jsonpSubmit_' + Date.now();
+    const scoreValue = Math.floor(score);
 
-        if (!response.ok) {
-            throw new Error(`HTTP error ${response.status}`);
-        }
+    window[callbackName] = function(data) {
+        delete window[callbackName];
+        const script = document.getElementById(callbackName);
+        if (script) script.remove();
 
-        const data = await response.json();
         console.log('Score submission response:', data);
 
-        if (data.success) {
+        if (data && data.success) {
             alert('Score submitted successfully!');
             document.getElementById('playerName').value = '';
             loadHighScoreFromAPI();
             showHighscores();
         } else {
-            alert('Failed to submit score: ' + (data.error || 'Unknown error'));
+            alert('Failed to submit score: ' + ((data && data.error) || 'Unknown error'));
         }
-    } catch (error) {
-        console.error('Failed to submit score', error);
-        alert('Failed to submit score. Please try again.');
-    } finally {
+
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Score';
-    }
+    };
+
+    const script = document.createElement('script');
+    script.id = callbackName;
+    script.src = `${API_URL}?action=addScore&name=${encodeURIComponent(playerName)}&score=${scoreValue}&callback=${callbackName}`;
+    script.onerror = function() {
+        delete window[callbackName];
+        script.remove();
+        console.error('Failed to submit score: network error');
+        alert('Failed to submit score. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Score';
+    };
+
+    document.head.appendChild(script);
 }
 
 // Load high score from API using JSONP
