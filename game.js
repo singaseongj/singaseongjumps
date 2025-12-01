@@ -569,6 +569,12 @@ async function submitScore() {
         return;
     }
 
+    const validNamePattern = /^[A-Za-z\uAC00-\uD7A3]+$/;
+    if (!validNamePattern.test(playerName)) {
+        alert('Name must use only English letters (A-Z, a-z) or Korean characters (가-힣). No numbers, symbols, or spaces are allowed.');
+        return;
+    }
+
     const submitBtn = document.getElementById('submitScore');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
