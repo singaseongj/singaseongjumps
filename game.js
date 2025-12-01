@@ -52,8 +52,6 @@ let scoreAccumulator = 0;
 let lastFrameTime = null;
 let gameStartTime = null;
 let darkModeActivated = false;
-let darkModeTimerId = null;
-darkModeTimerId = setTimeout(activateDarkMode, 120000);
 
 // Speed progression constants - Much faster progression
 const MAX_GAME_SPEED = 18;
@@ -211,6 +209,7 @@ function unduck() {
 function startGame() {
     hideMainMenu();
     document.getElementById('highscoreScreen').classList.remove('active');
+    deactivateDarkMode();
     gameRunning = true;
     gameOver = false;
     score = 0;
@@ -228,9 +227,6 @@ function startGame() {
     chicken.ducking = false;
     document.getElementById('gameOverScreen').classList.remove('active');
     updateScore(); // Reset score display
-    if (!darkModeTimerId) {
-        darkModeTimerId = setTimeout(activateDarkMode, 120000);
-    }
     animationId = requestAnimationFrame(gameLoop);
 }
 
@@ -248,6 +244,12 @@ function activateDarkMode() {
     if (darkModeActivated) return;
     darkModeActivated = true;
     document.body.classList.add('dark-mode');
+}
+
+function deactivateDarkMode() {
+    if (!darkModeActivated) return;
+    darkModeActivated = false;
+    document.body.classList.remove('dark-mode');
 }
 
 // Update chicken physics
@@ -555,12 +557,17 @@ function gameLoop(timestamp) {
     // Update score
     updateScore();
 
+    if (!darkModeActivated && score >= 500) {
+        activateDarkMode();
+    }
+
     // Continue loop
     animationId = requestAnimationFrame(gameLoop);
 }
 
 // End game
 function endGame() {
+    deactivateDarkMode();
     gameRunning = false;
     gameOver = true;
     cancelAnimationFrame(animationId);
