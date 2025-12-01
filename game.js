@@ -613,16 +613,10 @@ async function submitScore() {
         score: Math.floor(score)
     };
 
-    try {
-        console.log('Submitting score request');
-        const response = await fetch(`${API_URL}?action=addScore`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+    const callbackName = `jsonpSubmit_${Date.now()}`;
+    const script = document.createElement('script');
 
-        const data = await response.json();
-
+    window[callbackName] = (data) => {
         if (data.success) {
             alert('Score submitted successfully!');
             document.getElementById('playerName').value = '';
@@ -630,13 +624,25 @@ async function submitScore() {
         } else {
             alert('Failed to submit score: ' + (data.error || 'Unknown error'));
         }
-    } catch (error) {
-        console.error('Failed to submit score', error);
+
+        cleanup();
+    };
+
+    script.src = `${API_URL}?action=addScore&name=${encodeURIComponent(payload.name)}&score=${payload.score}&callback=${callbackName}`;
+    script.onerror = () => {
+        console.error('Failed to submit score via JSONP');
         alert('Failed to submit score. Please try again.');
-    } finally {
+        cleanup();
+    };
+
+    function cleanup() {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Score';
+        delete window[callbackName];
+        script.remove();
     }
+
+    document.body.appendChild(script);
 }
 
 // Load high score from API
