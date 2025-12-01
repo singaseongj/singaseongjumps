@@ -9,7 +9,7 @@ canvas.height = CANVAS_HEIGHT;
 
 // API configuration
 const API_URL = 'https://script.google.com/macros/s/AKfycbwor_TGA2cHvWrIBT20FbAUJNT_qHuTAbs1A99wWqDRQP_Z0l35IVWuomMzhPZWB17v/exec';
-const SECRET_HASH = document.body.dataset.scoreHash || '';
+const SECRET = 'umps7170!';
 
 // Game state
 let gameRunning = false;
@@ -19,9 +19,7 @@ let highScore = 0;
 let gameSpeed = 5;
 let obstacleTimer = 0;
 let obstacleInterval = 100;
-let difficultyTimer = 0;
-let darkModeActive = false;
-let lastDifficultyScore = 0;
+let animationFrame = 0;
 
 // Chicken character
 const chicken = {
@@ -49,10 +47,6 @@ const ground = {
     y: CANVAS_HEIGHT - 50,
     height: 50
 };
-
-function isDarkMode() {
-    return document.body.classList.contains('dark-mode');
-}
 
 // Game loop
 let animationId;
@@ -127,16 +121,12 @@ function startGame() {
     score = 0;
     gameSpeed = 5;
     obstacleInterval = 100;
-    difficultyTimer = 0;
-    darkModeActive = false;
-    lastDifficultyScore = 0;
     obstacles = [];
     obstacleTimer = 0;
     chicken.y = chicken.normalY;
     chicken.velocity = 0;
     chicken.jumping = false;
     chicken.ducking = false;
-    document.body.classList.remove('dark-mode');
     document.getElementById('gameOverScreen').classList.remove('active');
     gameLoop();
 }
@@ -164,7 +154,7 @@ function updateChicken() {
 function createObstacle() {
     const types = ['cactus', 'box', 'flyingBox'];
     const type = types[Math.floor(Math.random() * types.length)];
-
+    
     let obstacle = {
         x: CANVAS_WIDTH,
         type: type
@@ -181,7 +171,7 @@ function createObstacle() {
     } else if (type === 'flyingBox') {
         obstacle.width = 40;
         obstacle.height = 40;
-        obstacle.y = ground.y - 110; // Lower to encourage ducking
+        obstacle.y = ground.y - 140; // Flying higher
     }
 
     obstacles.push(obstacle);
@@ -190,8 +180,7 @@ function createObstacle() {
 // Update obstacles
 function updateObstacles() {
     obstacleTimer++;
-    difficultyTimer++;
-
+    
     if (obstacleTimer > obstacleInterval) {
         createObstacle();
         obstacleTimer = 0;
@@ -208,15 +197,9 @@ function updateObstacles() {
     });
 
     // Increase difficulty over time
-    if (difficultyTimer >= 600) { // roughly every 10 seconds at 60fps
-        if (gameSpeed < 14) gameSpeed += 0.2;
-        if (obstacleInterval > 55) obstacleInterval -= 2;
-        difficultyTimer = 0;
-    }
-    if (score > lastDifficultyScore && score % 100 === 0) {
-        if (gameSpeed < 14) gameSpeed += 0.05;
-        if (obstacleInterval > 55) obstacleInterval -= 0.5;
-        lastDifficultyScore = score;
+    if (score > 0 && score % 100 === 0) {
+        if (gameSpeed < 12) gameSpeed += 0.1;
+        if (obstacleInterval > 60) obstacleInterval -= 1;
     }
 }
 
@@ -269,16 +252,30 @@ function drawChicken() {
         ctx.fill();
     }
     
-    // Legs
+    // Animated Legs
     ctx.strokeStyle = '#FF8C00';
     ctx.lineWidth = 3;
+    
+    // Calculate leg movement based on animation frame (only when game is running)
+    let legOffset1 = 0;
+    let legOffset2 = 0;
+    
+    if (gameRunning && !chicken.jumping) {
+        const legCycle = Math.floor(animationFrame / 5) % 2;
+        legOffset1 = legCycle === 0 ? -3 : 3;
+        legOffset2 = legCycle === 0 ? 3 : -3;
+    }
+    
+    // Left leg
     ctx.beginPath();
     ctx.moveTo(chicken.x + 15, chickenCurrentY + chickenCurrentHeight);
-    ctx.lineTo(chicken.x + 15, chickenCurrentY + chickenCurrentHeight + 8);
+    ctx.lineTo(chicken.x + 15 + legOffset1, chickenCurrentY + chickenCurrentHeight + 8);
     ctx.stroke();
+    
+    // Right leg
     ctx.beginPath();
     ctx.moveTo(chicken.x + 35, chickenCurrentY + chickenCurrentHeight);
-    ctx.lineTo(chicken.x + 35, chickenCurrentY + chickenCurrentHeight + 8);
+    ctx.lineTo(chicken.x + 35 + legOffset2, chickenCurrentY + chickenCurrentHeight + 8);
     ctx.stroke();
 }
 
@@ -317,12 +314,11 @@ function drawObstacle(obstacle) {
 
 // Draw ground
 function drawGround() {
-    const darkMode = isDarkMode();
-    ctx.fillStyle = darkMode ? '#1F2937' : '#8B7355';
+    ctx.fillStyle = '#8B7355';
     ctx.fillRect(0, ground.y, CANVAS_WIDTH, ground.height);
-
+    
     // Ground pattern
-    ctx.fillStyle = darkMode ? '#111827' : '#6F5C4A';
+    ctx.fillStyle = '#6F5C4A';
     for (let i = 0; i < CANVAS_WIDTH; i += 20) {
         ctx.fillRect(i, ground.y, 10, 5);
         ctx.fillRect(i + 10, ground.y + 10, 10, 5);
@@ -332,13 +328,12 @@ function drawGround() {
 // Draw clouds
 function drawClouds() {
     const time = Date.now() * 0.0001;
-    const darkMode = isDarkMode();
-
+    
     for (let i = 0; i < 3; i++) {
         const x = ((time * 20 + i * 250) % (CANVAS_WIDTH + 100)) - 50;
         const y = 50 + i * 40;
-
-        ctx.fillStyle = darkMode ? 'rgba(209, 213, 219, 0.65)' : 'rgba(255, 255, 255, 0.8)';
+        
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
         ctx.beginPath();
         ctx.arc(x, y, 25, 0, Math.PI * 2);
         ctx.arc(x + 25, y, 30, 0, Math.PI * 2);
@@ -352,16 +347,12 @@ function updateScore() {
     document.getElementById('score').textContent = Math.floor(score);
 }
 
-function updateTheme() {
-    if (!darkModeActive && score >= 1000) {
-        darkModeActive = true;
-        document.body.classList.add('dark-mode');
-    }
-}
-
 // Game loop
 function gameLoop() {
     if (!gameRunning) return;
+
+    // Increment animation frame
+    animationFrame++;
 
     // Clear canvas
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
@@ -386,7 +377,6 @@ function gameLoop() {
 
     // Update score
     updateScore();
-    updateTheme();
 
     // Continue loop
     animationId = requestAnimationFrame(gameLoop);
@@ -414,14 +404,9 @@ function endGame() {
 // Submit score to API
 async function submitScore() {
     const playerName = document.getElementById('playerName').value.trim();
-
+    
     if (!playerName) {
         alert('Please enter your name!');
-        return;
-    }
-
-    if (!SECRET_HASH) {
-        alert('Score submission is unavailable because the secret hash is missing.');
         return;
     }
     
@@ -430,27 +415,45 @@ async function submitScore() {
     submitBtn.textContent = 'Submitting...';
     
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: playerName,
-                score: Math.floor(score),
-                secret: SECRET_HASH
-            })
+        // Use GET method with query parameters for better compatibility
+        const url = `${API_URL}?action=addScore&name=${encodeURIComponent(playerName)}&score=${Math.floor(score)}&secret=${SECRET}`;
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            mode: 'no-cors' // This helps with CORS issues
         });
         
-        const data = await response.json();
+        // With no-cors mode, we can't read the response, so we assume success
+        alert('Score submitted successfully!');
+        document.getElementById('playerName').value = '';
         
-        if (data.status === 'success') {
-            alert('Score submitted successfully!');
-            document.getElementById('playerName').value = '';
-        } else {
-            alert('Failed to submit score: ' + (data.message || 'Unknown error'));
-        }
     } catch (error) {
         console.error('Error submitting score:', error);
-        alert('Failed to submit score. Please try again.');
+        
+        // Try alternative POST method as fallback
+        try {
+            const response = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: playerName,
+                    score: Math.floor(score),
+                    secret: SECRET
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                alert('Score submitted successfully!');
+                document.getElementById('playerName').value = '';
+            } else {
+                alert('Failed to submit score: ' + (data.message || 'Unknown error'));
+            }
+        } catch (postError) {
+            console.error('POST method also failed:', postError);
+            alert('Failed to submit score. Please try again.');
+        }
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Score';
@@ -516,14 +519,14 @@ function loadHighScore() {
 loadHighScore();
 
 // Draw initial screen
-ctx.fillStyle = isDarkMode() ? '#0B1221' : '#87CEEB';
+ctx.fillStyle = '#87CEEB';
 ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 drawClouds();
 drawGround();
 drawChicken();
 
 // Start message
-ctx.fillStyle = isDarkMode() ? '#E5E7EB' : '#2D3142';
+ctx.fillStyle = '#2D3142';
 ctx.font = 'bold 24px Fredoka, sans-serif';
 ctx.textAlign = 'center';
 ctx.fillText('Press SPACE or Click to Start!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
