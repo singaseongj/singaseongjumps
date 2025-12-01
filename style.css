@@ -48,6 +48,22 @@ body::before {
     animation: scanlines 8s linear infinite;
 }
 
+body.dark-mode {
+    background: linear-gradient(135deg, #111827 0%, #0b1224 100%);
+    color: #E5E7EB;
+}
+
+body.dark-mode::before {
+    background:
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(255, 255, 255, 0.02) 2px,
+            rgba(255, 255, 255, 0.02) 4px
+        );
+}
+
 @keyframes scanlines {
     0% { transform: translateY(0); }
     100% { transform: translateY(4px); }
@@ -72,6 +88,14 @@ body::before {
     gap: 16px;
 }
 
+body.dark-mode .game-container {
+    background: #0f172a;
+    box-shadow:
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        0 0 0 8px rgba(255, 255, 255, 0.05),
+        inset 0 0 100px rgba(255, 255, 255, 0.05);
+}
+
 .game-header {
     display: flex;
     justify-content: space-between;
@@ -84,13 +108,25 @@ body::before {
     color: white;
 }
 
+body.dark-mode .game-header {
+    background: linear-gradient(135deg, #1f2937, #0f172a);
+    color: #E5E7EB;
+}
+
 .title {
     font-family: 'Press Start 2P', cursive;
     font-size: clamp(12px, 3vw, 20px);
-    text-shadow: 
+    text-shadow:
         3px 3px 0 rgba(0, 0, 0, 0.3),
         0 0 20px rgba(255, 255, 255, 0.5);
     animation: pulse 2s ease-in-out infinite;
+}
+
+body.dark-mode .title {
+    color: #E5E7EB;
+    text-shadow:
+        2px 2px 0 rgba(0, 0, 0, 0.6),
+        0 0 16px rgba(255, 255, 255, 0.3);
 }
 
 @keyframes pulse {
@@ -110,11 +146,21 @@ body::before {
     margin-bottom: 5px;
 }
 
+body.dark-mode .label {
+    color: #cbd5e1;
+}
+
 #score, #highscore {
     font-family: 'Press Start 2P', cursive;
     font-size: clamp(16px, 4vw, 24px);
     font-weight: bold;
     text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.2);
+}
+
+body.dark-mode #score,
+body.dark-mode #highscore {
+    color: #f8fafc;
+    text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5);
 }
 
 #gameCanvas {
@@ -128,6 +174,13 @@ body::before {
         0 5px 15px rgba(0, 0, 0, 0.2);
     cursor: pointer;
     aspect-ratio: 16 / 9;
+}
+
+body.dark-mode #gameCanvas {
+    background: linear-gradient(to bottom, #0b1224 0%, #0f172a 100%);
+    box-shadow:
+        inset 0 -5px 20px rgba(255, 255, 255, 0.06),
+        0 5px 15px rgba(0, 0, 0, 0.5);
 }
 
 .mobile-controls {
@@ -208,6 +261,11 @@ body::before {
     padding: 24px;
 }
 
+body.dark-mode .game-over-screen,
+body.dark-mode .highscore-screen {
+    background: rgba(15, 23, 42, 0.92);
+}
+
 .game-over-screen.active, .highscore-screen.active {
     display: flex;
     animation: fadeIn 0.3s ease-out;
@@ -229,6 +287,13 @@ body::before {
     animation: slideUp 0.4s ease-out;
 }
 
+body.dark-mode .game-over-content,
+body.dark-mode .highscore-content {
+    background: #111827;
+    color: #E5E7EB;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
 @keyframes slideUp {
     from {
         transform: translateY(50px);
@@ -248,6 +313,11 @@ body::before {
     text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
 }
 
+body.dark-mode .game-over-content h2,
+body.dark-mode .highscore-content h2 {
+    color: #E5E7EB;
+}
+
 .final-score {
     margin-bottom: 30px;
 }
@@ -260,12 +330,20 @@ body::before {
     letter-spacing: 2px;
 }
 
+body.dark-mode .final-score p {
+    color: #cbd5e1;
+}
+
 .score-value {
     font-family: 'Press Start 2P', cursive;
     font-size: 48px;
     color: var(--secondary-color);
     text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
     animation: scoreReveal 0.6s ease-out;
+}
+
+body.dark-mode .score-value {
+    color: #38bdf8;
 }
 
 @keyframes scoreReveal {
@@ -297,10 +375,21 @@ body::before {
     transition: all 0.3s;
 }
 
+body.dark-mode #playerName {
+    background: #0b162f;
+    color: #E5E7EB;
+    border-color: #1f2937;
+}
+
 #playerName:focus {
     outline: none;
     border-color: var(--primary-color);
     box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+}
+
+body.dark-mode #playerName:focus {
+    border-color: #38bdf8;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
 }
 
 .submit-btn {
@@ -318,6 +407,11 @@ body::before {
     box-shadow: 0 4px 0 #3BA89D;
     position: relative;
     overflow: hidden;
+}
+
+body.dark-mode .submit-btn {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    box-shadow: 0 4px 0 #1e3a8a;
 }
 
 .submit-btn::before {

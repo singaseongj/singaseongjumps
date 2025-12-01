@@ -39,12 +39,18 @@ let gameSpeed = 7; // Start faster (was 5)
 let obstacleTimer = 0;
 let obstacleInterval = 100;
 let animationFrame = 0;
+let scoreAccumulator = 0;
+let lastFrameTime = null;
+let gameStartTime = null;
+let darkModeActivated = false;
+let darkModeTimerId = null;
+darkModeTimerId = setTimeout(activateDarkMode, 120000);
 
 // Speed progression constants - Much faster progression
 const MAX_GAME_SPEED = 18;
-const SPEED_INCREMENT = 0.002; // Increased from 0.001
+const SPEED_INCREMENT = 0.004;
 const MIN_OBSTACLE_INTERVAL = 40;
-const OBSTACLE_INTERVAL_DECREMENT = 0.008; // Increased from 0.005
+const OBSTACLE_INTERVAL_DECREMENT = 0.016;
 
 // Chicken character
 const chicken = {
@@ -85,6 +91,7 @@ const playAgainButton = document.getElementById('playAgainBtn');
 const highscoreButton = document.getElementById('highscoreBtn');
 const submitScoreButton = document.getElementById('submitScore');
 const backButton = document.getElementById('backBtn');
+const playerNameInput = document.getElementById('playerName');
 
 const handleJumpInput = (e) => {
     e?.preventDefault?.();
@@ -117,8 +124,16 @@ playAgainButton.addEventListener('click', () => { playButtonSound(); restartGame
 highscoreButton.addEventListener('click', () => { playButtonSound(); showHighscores(); });
 submitScoreButton.addEventListener('click', () => { playButtonSound(); submitScore(); });
 backButton.addEventListener('click', () => { playButtonSound(); hideHighscores(); });
+playerNameInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        playButtonSound();
+        submitScore();
+    }
+});
 canvas.addEventListener('click', () => {
     if (!gameRunning && !gameOver) {
+        playButtonSound();
         startGame();
     }
 });
@@ -173,18 +188,35 @@ function startGame() {
     obstacles = [];
     obstacleTimer = 0;
     animationFrame = 0;
+    scoreAccumulator = 0;
+    lastFrameTime = null;
+    gameStartTime = Date.now();
     chicken.y = chicken.normalY;
     chicken.velocity = 0;
     chicken.jumping = false;
     chicken.ducking = false;
     document.getElementById('gameOverScreen').classList.remove('active');
     updateScore(); // Reset score display
-    gameLoop();
+    if (!darkModeTimerId) {
+        darkModeTimerId = setTimeout(activateDarkMode, 120000);
+    }
+    animationId = requestAnimationFrame(gameLoop);
 }
 
 // Restart game
 function restartGame() {
     startGame();
+}
+
+function getElapsedSeconds() {
+    if (!gameStartTime) return 0;
+    return (Date.now() - gameStartTime) / 1000;
+}
+
+function activateDarkMode() {
+    if (darkModeActivated) return;
+    darkModeActivated = true;
+    document.body.classList.add('dark-mode');
 }
 
 // Update chicken physics
@@ -216,12 +248,14 @@ function createObstacle() {
         obstacle.height = 60;
         obstacle.y = ground.y - obstacle.height;
     } else if (type === 'box') {
+        const elapsedSeconds = getElapsedSeconds();
         obstacle.width = 40;
-        obstacle.height = 40;
+        obstacle.height = 32 + Math.min(26, Math.floor(elapsedSeconds / 8) * 4) + Math.floor(Math.random() * 6);
         obstacle.y = ground.y - obstacle.height;
     } else if (type === 'flyingBox') {
+        const elapsedSeconds = getElapsedSeconds();
         obstacle.width = 40;
-        obstacle.height = 40;
+        obstacle.height = 32 + Math.min(26, Math.floor(elapsedSeconds / 10) * 4) + Math.floor(Math.random() * 6);
         // Much more height variation - from very low to very high
         const heights = [
             ground.y - 65,   // Very low - must duck
@@ -253,7 +287,6 @@ function updateObstacles() {
         // Remove off-screen obstacles
         if (obstacle.x + obstacle.width < 0) {
             obstacles.splice(index, 1);
-            score += 10;
         }
     });
 
@@ -376,13 +409,28 @@ function drawObstacle(obstacle) {
     }
 }
 
+function getSkyColor() {
+    return darkModeActivated ? '#0b1224' : '#87CEEB';
+}
+
+function getGroundColors() {
+    return darkModeActivated
+        ? { base: '#1f2937', accent: '#0f172a' }
+        : { base: '#8B7355', accent: '#6F5C4A' };
+}
+
+function getTextColor() {
+    return darkModeActivated ? '#E5E7EB' : '#2D3142';
+}
+
 // Draw ground
 function drawGround() {
-    ctx.fillStyle = '#8B7355';
+    const groundColors = getGroundColors();
+    ctx.fillStyle = groundColors.base;
     ctx.fillRect(0, ground.y, CANVAS_WIDTH, ground.height);
-    
+
     // Ground pattern
-    ctx.fillStyle = '#6F5C4A';
+    ctx.fillStyle = groundColors.accent;
     for (let i = 0; i < CANVAS_WIDTH; i += 20) {
         ctx.fillRect(i, ground.y, 10, 5);
         ctx.fillRect(i + 10, ground.y + 10, 10, 5);
@@ -392,12 +440,13 @@ function drawGround() {
 // Draw clouds
 function drawClouds() {
     const time = Date.now() * 0.0001;
-    
+
     for (let i = 0; i < 3; i++) {
         const x = ((time * 20 + i * 250) % (CANVAS_WIDTH + 100)) - 50;
         const y = 50 + i * 40;
-        
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+
+        const cloudAlpha = darkModeActivated ? 0.35 : 0.8;
+        ctx.fillStyle = `rgba(255, 255, 255, ${cloudAlpha})`;
         ctx.beginPath();
         ctx.arc(x, y, 25, 0, Math.PI * 2);
         ctx.arc(x + 25, y, 30, 0, Math.PI * 2);
@@ -412,14 +461,29 @@ function updateScore() {
 }
 
 // Game loop
-function gameLoop() {
+function gameLoop(timestamp) {
     if (!gameRunning) return;
+
+    if (!lastFrameTime) {
+        lastFrameTime = timestamp;
+    }
+
+    const deltaSeconds = (timestamp - lastFrameTime) / 1000;
+    lastFrameTime = timestamp;
+
+    scoreAccumulator += deltaSeconds;
+    while (scoreAccumulator >= 0.2) {
+        score += 1;
+        scoreAccumulator -= 0.2;
+    }
 
     // Increment animation frame
     animationFrame++;
 
     // Clear canvas
     ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    ctx.fillStyle = getSkyColor();
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
     // Draw background
     drawClouds();
@@ -473,11 +537,12 @@ function submitScore() {
         alert('Please enter your name!');
         return;
     }
-    
+
     const submitBtn = document.getElementById('submitScore');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
-    
+    showHighscores();
+
     // Create unique callback name
     const callbackName = 'jsonpCallback_' + Date.now();
     
@@ -625,14 +690,14 @@ function loadHighScoreFromLocal() {
 loadHighScoreFromAPI();
 
 // Draw initial screen
-ctx.fillStyle = '#87CEEB';
+ctx.fillStyle = getSkyColor();
 ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 drawClouds();
 drawGround();
 drawChicken();
 
 // Start message
-ctx.fillStyle = '#2D3142';
+ctx.fillStyle = getTextColor();
 ctx.font = 'bold 24px Fredoka, sans-serif';
 ctx.textAlign = 'center';
 ctx.fillText('Press SPACE or Click to Start!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
