@@ -25,11 +25,56 @@ canvas.height = CANVAS_HEIGHT;
 // API configuration
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXBKcJcKVfT1IppcvNEUu-bQxiaUoNJLN2WMffGWJ-b80lMBAobrnSUXI-NuYIwjNu/exec';
 const SCORE_HASH_PLACEHOLDER = '__SCORE_KEY_HASH__';
-const SECRET = document.body?.dataset?.scoreHash;
+const SCORE_KEY_PLACEHOLDER = '__SCORE_KEY__';
+let SECRET = null;
 
-if (!SECRET || SECRET === SCORE_HASH_PLACEHOLDER) {
+function bufferToHex(buffer) {
+    return Array.from(new Uint8Array(buffer))
+        .map((b) => b.toString(16).padStart(2, '0'))
+        .join('');
+}
+
+async function hashSecret(secretKey) {
+    const encoded = new TextEncoder().encode(secretKey);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
+    return bufferToHex(hashBuffer);
+}
+
+async function initializeSecret() {
+    const hashedSecret = document.body?.dataset?.scoreHash;
+    if (hashedSecret && hashedSecret !== SCORE_HASH_PLACEHOLDER) {
+        SECRET = hashedSecret;
+        return SECRET;
+    }
+
+    const rawSecret = document.body?.dataset?.scoreKey || window.SCORE_KEY;
+    if (rawSecret && rawSecret !== SCORE_KEY_PLACEHOLDER) {
+        SECRET = await hashSecret(rawSecret);
+        document.body.dataset.scoreHash = SECRET;
+        return SECRET;
+    }
+
     throw new Error('Score hash is not configured. Please set SCORE_KEY in the environment.');
 }
+
+const secretReady = initializeSecret().catch((error) => {
+    console.error('Secret initialization failed', error);
+    throw error;
+});
+
+/**
+ * GET endpoint
+ * Examples:
+ * 1) Get highscores:
+ *    `${API_URL}?action=getScores&secret=${encodeURIComponent(SECRET)}&callback=myCallback`
+ *
+ * 2) Add score via GET:
+ *    `${API_URL}?action=addScore&name=Alice&score=100&secret=${encodeURIComponent(SECRET)}&callback=myCallback`
+ *
+ * POST endpoint
+ * - Accepts JSON body:
+ *   { "name": "Alice", "score": 123, "secret": SECRET, "action": "addScore" }
+ */
 
 // Game state
 let gameRunning = false;
@@ -531,11 +576,19 @@ function endGame() {
 }
 
 // Submit score to API using JSONP to avoid CORS
-function submitScore() {
+async function submitScore() {
     const playerName = document.getElementById('playerName').value.trim();
 
     if (!playerName) {
         alert('Please enter your name!');
+        return;
+    }
+
+    try {
+        await secretReady;
+    } catch (error) {
+        console.error('Secret initialization failed', error);
+        alert('Score submission is not configured. Please try again later.');
         return;
     }
 
@@ -590,7 +643,15 @@ function submitScore() {
 }
 
 // Load high score from API using JSONP
-function loadHighScoreFromAPI() {
+async function loadHighScoreFromAPI() {
+    try {
+        await secretReady;
+    } catch (error) {
+        console.error('Unable to load high scores: secret not configured', error);
+        loadHighScoreFromLocal();
+        return;
+    }
+
     const callbackName = 'jsonpHighscore_' + Date.now();
     
     window[callbackName] = function(data) {
@@ -621,13 +682,21 @@ function loadHighScoreFromAPI() {
 }
 
 // Show highscores using JSONP
-function showHighscores() {
+async function showHighscores() {
     document.getElementById('highscoreScreen').classList.add('active');
     document.getElementById('gameOverScreen').classList.remove('active');
 
     const listContainer = document.getElementById('highscoreList');
     listContainer.innerHTML = '<div class="loading">Loading highscores...</div>';
-    
+
+    try {
+        await secretReady;
+    } catch (error) {
+        console.error('Unable to show highscores: secret not configured', error);
+        listContainer.innerHTML = '<div class="loading">Secret key not configured</div>';
+        return;
+    }
+
     const callbackName = 'jsonpScores_' + Date.now();
     
     window[callbackName] = function(data) {
