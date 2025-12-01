@@ -33,17 +33,18 @@ jobs:
       - name: Verify hashed secret in index.html
         env:
           EXPECTED_HASH: ${{ steps.hash.outputs.hash }}
+          SCORE_KEY: ${{ secrets.SCORE_KEY }}
         run: |
           if ! grep -q 'data-score-hash' index.html; then
             echo "data-score-hash attribute not found in index.html"
             exit 1
           fi
-          ACTUAL_HASH=$(grep -oP 'data-score-hash="\K[^"]+' index.html)
+          ACTUAL_HASH=$(grep -oP 'data-score-hash="\K[^\"]+' index.html)
           if [ "${ACTUAL_HASH}" != "${EXPECTED_HASH}" ]; then
             echo "Hash mismatch. Expected ${EXPECTED_HASH} but found ${ACTUAL_HASH}."
             exit 1
           fi
-          if grep -q 'umps7170!' game.js; then
+          if rg --quiet --fixed-strings "${SCORE_KEY}" game.js; then
             echo "Hardcoded secret detected in game.js"
             exit 1
           fi
