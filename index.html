@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Singaseong Jumps</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div class="score-display">
+                <div class="label">Score</div>
+                <div id="score">0</div>
+            </div>
+            <div class="title">🐔 Singaseong Jumps</div>
+            <div class="highscore-display">
+                <div class="label">High Score</div>
+                <div id="highscore">0</div>
+            </div>
+        </div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <div class="mobile-controls" id="mobileControls">
+            <button class="control-btn jump-btn" id="jumpBtn">
+                <span>↑</span>
+                <span class="btn-label">JUMP</span>
+            </button>
+            <button class="control-btn duck-btn" id="duckBtn">
+                <span>↓</span>
+                <span class="btn-label">DUCK</span>
+            </button>
+        </div>
+
+        <div class="game-over-screen" id="gameOverScreen">
+            <div class="game-over-content">
+                <h2>Game Over!</h2>
+                <div class="final-score">
+                    <p>Your Score</p>
+                    <div class="score-value" id="finalScore">0</div>
+                </div>
+                <div class="name-input-container">
+                    <input type="text" id="playerName" placeholder="Enter your name" maxlength="20">
+                    <button id="submitScore" class="submit-btn">Submit Score</button>
+                </div>
+                <div class="game-over-buttons">
+                    <button id="playAgainBtn" class="menu-btn play-btn">Play Again</button>
+                    <button id="highscoreBtn" class="menu-btn highscore-btn">Highscores</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="highscore-screen" id="highscoreScreen">
+            <div class="highscore-content">
+                <h2>🏆 Top Players 🏆</h2>
+                <div id="highscoreList" class="highscore-list">
+                    <div class="loading">Loading...</div>
+                </div>
+                <button id="backBtn" class="menu-btn back-btn">Back to Game</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
