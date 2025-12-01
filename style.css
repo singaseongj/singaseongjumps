@@ -24,6 +24,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    min-height: -webkit-fill-available;
     overflow: hidden;
     padding: 10px;
 }
@@ -488,17 +489,21 @@ body::before {
 
 @media (max-width: 600px) {
     body {
-        padding: 5px;
+        padding: env(safe-area-inset-top, 0px) 8px env(safe-area-inset-bottom, 0px);
+        min-height: 100vh;
+        min-height: -webkit-fill-available;
     }
 
     .game-container {
-        padding: 10px;
-        width: 100vw;
-        height: 100vh;
-        max-width: none;
-        border-radius: 0;
+        padding: 12px 10px 16px;
+        width: 100%;
+        max-width: 520px;
+        height: auto;
+        max-height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        border-radius: 16px;
         display: flex;
         flex-direction: column;
+        gap: 12px;
     }
 
     .game-header {
@@ -512,19 +517,22 @@ body::before {
     }
 
     #gameCanvas {
-        flex: 1;
+        flex: 0 1 auto;
+        width: 100%;
+        aspect-ratio: 2 / 1;
         height: auto;
+        max-height: 65vh;
     }
 
     .mobile-controls {
-        gap: 10px;
-        margin-top: 10px;
+        gap: 8px;
+        margin-top: 2px;
         flex-shrink: 0;
     }
 
     .control-btn {
-        max-width: 120px;
-        padding: 12px;
+        max-width: 100px;
+        padding: 10px;
         font-size: 14px;
         gap: 4px;
         border-radius: 10px;
