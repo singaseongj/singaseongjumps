@@ -4,6 +4,7 @@ on:
   push:
     branches: ["main", "master"]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   validate-hash:
@@ -30,6 +31,14 @@ jobs:
           HASH=$(printf '%s' "${SCORE_KEY}" | sha256sum | cut -d' ' -f1)
           echo "hash=${HASH}" >> "$GITHUB_OUTPUT"
 
+      - name: Inject hash into index.html
+        env:
+          SCORE_KEY_HASH: ${{ steps.hash.outputs.hash }}
+        run: |
+          if grep -q "__SCORE_KEY_HASH__" index.html; then
+            sed -i "s/__SCORE_KEY_HASH__/${SCORE_KEY_HASH}/g" index.html
+          fi
+
       - name: Verify hashed secret in index.html
         env:
           EXPECTED_HASH: ${{ steps.hash.outputs.hash }}
@@ -46,6 +55,10 @@ jobs:
           fi
           if rg --quiet --fixed-strings "${SCORE_KEY}" game.js; then
             echo "Hardcoded secret detected in game.js"
+            exit 1
+          fi
+          if rg --quiet "__SCORE_KEY_HASH__" index.html; then
+            echo "Score hash placeholder still present in index.html."
             exit 1
           fi
 
