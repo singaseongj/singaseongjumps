@@ -244,6 +244,7 @@ body.dark-mode #gameCanvas {
     box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
 }
 
+.main-menu-screen,
 .game-over-screen, .highscore-screen {
     position: absolute;
     top: 0;
@@ -261,11 +262,13 @@ body.dark-mode #gameCanvas {
     padding: 24px;
 }
 
+body.dark-mode .main-menu-screen,
 body.dark-mode .game-over-screen,
 body.dark-mode .highscore-screen {
     background: rgba(15, 23, 42, 0.92);
 }
 
+.main-menu-screen.active,
 .game-over-screen.active, .highscore-screen.active {
     display: flex;
     animation: fadeIn 0.3s ease-out;
@@ -276,6 +279,7 @@ body.dark-mode .highscore-screen {
     to { opacity: 1; }
 }
 
+.main-menu-content,
 .game-over-content, .highscore-content {
     background: white;
     padding: clamp(28px, 3vw, 48px);
@@ -287,6 +291,7 @@ body.dark-mode .highscore-screen {
     animation: slideUp 0.4s ease-out;
 }
 
+body.dark-mode .main-menu-content,
 body.dark-mode .game-over-content,
 body.dark-mode .highscore-content {
     background: #111827;
@@ -316,6 +321,35 @@ body.dark-mode .highscore-content {
 body.dark-mode .game-over-content h2,
 body.dark-mode .highscore-content h2 {
     color: #E5E7EB;
+}
+
+.menu-title {
+    font-family: 'Press Start 2P', cursive;
+    font-size: clamp(24px, 6vw, 36px);
+    margin-bottom: 16px;
+    color: var(--primary-color);
+    text-shadow: 3px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+body.dark-mode .menu-title {
+    color: #38bdf8;
+}
+
+.menu-subtitle {
+    font-size: clamp(14px, 4vw, 18px);
+    color: #4B5563;
+    margin-bottom: 26px;
+}
+
+body.dark-mode .menu-subtitle {
+    color: #cbd5e1;
+}
+
+.main-menu-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
 }
 
 .final-score {
