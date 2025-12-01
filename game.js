@@ -23,64 +23,22 @@ canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
 // API configuration
-const API_URL = 'https://script.google.com/macros/s/AKfycbyXBKcJcKVfT1IppcvNEUu-bQxiaUoNJLN2WMffGWJ-b80lMBAobrnSUXI-NuYIwjNu/exec';
-const DEFAULT_SCORE_KEY = 'ef9b9dd5820f4a98c58cb19a2da0f8a1c0f9084acecaabbea620dd6fb2e52cb4';
-const SCORE_HASH_PLACEHOLDER = '__SCORE_KEY_HASH__';
-const SCORE_KEY_PLACEHOLDER = '__SCORE_KEY__';
-let SECRET = null;
-
-function bufferToHex(buffer) {
-    return Array.from(new Uint8Array(buffer))
-        .map((b) => b.toString(16).padStart(2, '0'))
-        .join('');
-}
-
-async function hashSecret(secretKey) {
-    const encoded = new TextEncoder().encode(secretKey);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', encoded);
-    return bufferToHex(hashBuffer);
-}
-
-async function initializeSecret() {
-    const { scoreHash, scoreKey } = document.body?.dataset || {};
-    const resolvedKey = scoreKey && scoreKey !== SCORE_KEY_PLACEHOLDER
-        ? scoreKey
-        : DEFAULT_SCORE_KEY;
-
-    // If the raw secret key is provided, hash it so we never expose the plain key in requests.
-    if (resolvedKey) {
-        SECRET = await hashSecret(resolvedKey);
-        return SECRET;
-    }
-
-    // Fallback to a precomputed hash if provided directly.
-    if (scoreHash && scoreHash !== SCORE_HASH_PLACEHOLDER) {
-        SECRET = scoreHash;
-        return SECRET;
-    }
-
-    // The workflow's job is to replace the placeholder in index.html with the hash.
-    // If it's still the placeholder, or missing, we fail.
-    throw new Error('Score hash is not configured. Please set SCORE_KEY in the environment.');
-}
-
-const secretReady = initializeSecret().catch((error) => {
-    console.error('Secret initialization failed', error);
-    throw error;
-});
+const API_URL = 'https://script.google.com/macros/s/AKfycby8-mQbxKhSyxqIcr2WRs0X4dQdGzUE5DE2Ob0rFbLk7madDPn52TDjG_URPJDJOlDL/exec';
 
 /**
  * GET endpoint
  * Examples:
  * 1) Get highscores:
- *    `${API_URL}?action=getScores&secret=${encodeURIComponent(SECRET)}&callback=myCallback`
+ *    `${API_URL}?action=getScores&callback=myCallback`
  *
- * 2) Add score via GET:
- *    `${API_URL}?action=addScore&name=Alice&score=100&secret=${encodeURIComponent(SECRET)}&callback=myCallback`
+ * 2) Add score via POST:
+ *    fetch(API_URL, {
+ *      method: 'POST',
+ *      headers: { 'Content-Type': 'application/json' },
+ *      body: JSON.stringify({ action: 'addScore', name: 'Alice', score: 100 })
+ *    })
  *
- * POST endpoint
- * - Accepts JSON body:
- *   { "name": "Alice", "score": 123, "secret": SECRET, "action": "addScore" }
+ * POST endpoint accepts JSON body with `action`, `name`, and `score` fields.
  */
 
 // Game state
@@ -604,7 +562,7 @@ function endGame() {
     document.getElementById('playerName').value = '';
 }
 
-// Submit score to API using JSONP to avoid CORS
+// Submit score to API using POST
 async function submitScore() {
     const playerName = document.getElementById('playerName').value.trim();
 
@@ -613,74 +571,50 @@ async function submitScore() {
         return;
     }
 
-    try {
-        await secretReady;
-    } catch (error) {
-        console.error('Secret initialization failed', error);
-        alert('Score submission is not configured. Please try again later.');
-        return;
-    }
-
     const submitBtn = document.getElementById('submitScore');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
     showHighscores();
 
-    // Create unique callback name
-    const callbackName = 'jsonpCallback_' + Date.now();
-    
-    // Define callback function
-    window[callbackName] = function(data) {
-        // Cleanup
-        delete window[callbackName];
-        const script = document.getElementById(callbackName);
-        if (script) script.remove();
-        
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit Score';
-        
+    try {
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                action: 'addScore',
+                name: playerName,
+                score: Math.floor(score)
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error ${response.status}`);
+        }
+
+        const data = await response.json();
         console.log('Score submission response:', data);
-        
+
         if (data.success) {
             alert('Score submitted successfully!');
             document.getElementById('playerName').value = '';
             loadHighScoreFromAPI();
+            showHighscores();
         } else {
             alert('Failed to submit score: ' + (data.error || 'Unknown error'));
         }
-    };
-    
-    // Create script tag for JSONP
-    const script = document.createElement('script');
-    script.id = callbackName;
-    const url = `${API_URL}?action=addScore&name=${encodeURIComponent(playerName)}&score=${Math.floor(score)}&secret=${encodeURIComponent(SECRET)}&callback=${callbackName}`;
-    
-    console.log('Submitting score request');
-    script.src = url;
-    
-    // Handle errors
-    script.onerror = function() {
-        delete window[callbackName];
-        script.remove();
+    } catch (error) {
+        console.error('Failed to submit score', error);
+        alert('Failed to submit score. Please try again.');
+    } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Score';
-        console.error('Script loading failed');
-        alert('Failed to submit score. Please try again.');
-    };
-    
-    document.head.appendChild(script);
+    }
 }
 
 // Load high score from API using JSONP
 async function loadHighScoreFromAPI() {
-    try {
-        await secretReady;
-    } catch (error) {
-        console.error('Unable to load high scores: secret not configured', error);
-        loadHighScoreFromLocal();
-        return;
-    }
-
     const callbackName = 'jsonpHighscore_' + Date.now();
     
     window[callbackName] = function(data) {
@@ -700,7 +634,7 @@ async function loadHighScoreFromAPI() {
     
     const script = document.createElement('script');
     script.id = callbackName;
-    script.src = `${API_URL}?action=getScores&secret=${encodeURIComponent(SECRET)}&callback=${callbackName}`;
+    script.src = `${API_URL}?action=getScores&callback=${callbackName}`;
     script.onerror = function() {
         delete window[callbackName];
         script.remove();
@@ -718,14 +652,6 @@ async function showHighscores() {
 
     const listContainer = document.getElementById('highscoreList');
     listContainer.innerHTML = '<div class="loading">Loading highscores...</div>';
-
-    try {
-        await secretReady;
-    } catch (error) {
-        console.error('Unable to show highscores: secret not configured', error);
-        listContainer.innerHTML = '<div class="loading">Secret key not configured</div>';
-        return;
-    }
 
     const callbackName = 'jsonpScores_' + Date.now();
     
@@ -753,7 +679,7 @@ async function showHighscores() {
     
     const script = document.createElement('script');
     script.id = callbackName;
-    script.src = `${API_URL}?action=getScores&secret=${encodeURIComponent(SECRET)}&callback=${callbackName}`;
+    script.src = `${API_URL}?action=getScores&callback=${callbackName}`;
     script.onerror = function() {
         delete window[callbackName];
         script.remove();
