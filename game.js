@@ -361,21 +361,24 @@ function drawChicken() {
     ctx.fillRect(chicken.x, chickenCurrentY, chicken.width, chickenCurrentHeight);
 
     // Wing (folded on ground, spread when jumping)
-    const wingLift = chicken.jumping ? -10 : -4;
-    const wingSpan = chicken.jumping ? 28 : 18;
-    const wingFlare = chicken.jumping ? 14 : 8;
+    const wingLift = chicken.jumping ? -12 : -5;
+    const wingSpan = chicken.jumping ? 32 : 22;
+    const wingFlare = chicken.jumping ? 18 : 11;
     const wingTilt = chicken.jumping ? -Math.PI / 5 : -Math.PI / 12;
 
     ctx.save();
     ctx.translate(chicken.x + chicken.width / 2 - 6, chickenCurrentY + chickenCurrentHeight / 2);
     ctx.rotate(wingTilt + (chicken.jumping ? Math.sin(animationFrame / 6) * 0.08 : 0));
-    ctx.fillStyle = '#FFE082';
+    ctx.fillStyle = '#FFB300';
+    ctx.strokeStyle = '#FF8F00';
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.quadraticCurveTo(wingSpan, wingLift, wingSpan, wingFlare);
     ctx.lineTo(0, wingFlare + 6);
     ctx.closePath();
     ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.stroke();
     ctx.restore();
 
     // Chicken head
