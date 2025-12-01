@@ -410,33 +410,22 @@ async function submitScore() {
         alert('Please enter your name!');
         return;
     }
-
-    if (!SECRET) {
-        alert('Score service is unavailable right now. Please try again later.');
-        return;
-    }
     
     const submitBtn = document.getElementById('submitScore');
     submitBtn.disabled = true;
     submitBtn.textContent = 'Submitting...';
     
     try {
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                name: playerName,
-                score: Math.floor(score),
-                secret: SECRET,
-                action: 'addScore'
-            })
-        });
-
+        // Use GET method for better compatibility with Google Apps Script
+        const url = `${API_URL}?action=addScore&name=${encodeURIComponent(playerName)}&score=${Math.floor(score)}&secret=${encodeURIComponent(SECRET)}`;
+        const response = await fetch(url);
         const data = await response.json();
 
         if (data.success) {
             alert('Score submitted successfully!');
             document.getElementById('playerName').value = '';
+            // Refresh highscore from API after submission
+            loadHighScoreFromAPI();
         } else {
             throw new Error(data.error || 'Unknown error');
         }
@@ -449,6 +438,26 @@ async function submitScore() {
     }
 }
 
+// Load high score from API
+async function loadHighScoreFromAPI() {
+    try {
+        const response = await fetch(`${API_URL}?action=getScores&secret=${encodeURIComponent(SECRET)}`);
+        const data = await response.json();
+
+        if (data.success && data.highscores && data.highscores.length > 0) {
+            // Get the highest score (first item since it's sorted descending)
+            const topScore = data.highscores[0].score;
+            highScore = topScore;
+            document.getElementById('highscore').textContent = highScore;
+            localStorage.setItem('highScore', highScore);
+        }
+    } catch (error) {
+        console.error('Error loading highscore from API:', error);
+        // Fall back to localStorage if API fails
+        loadHighScoreFromLocal();
+    }
+}
+
 // Show highscores
 async function showHighscores() {
     document.getElementById('highscoreScreen').classList.add('active');
@@ -456,11 +465,6 @@ async function showHighscores() {
 
     const listContainer = document.getElementById('highscoreList');
     listContainer.innerHTML = '<div class="loading">Loading highscores...</div>';
-
-    if (!SECRET) {
-        listContainer.innerHTML = '<div class="loading">Highscores unavailable</div>';
-        return;
-    }
     
     try {
         const response = await fetch(`${API_URL}?action=getScores&secret=${encodeURIComponent(SECRET)}`);
@@ -468,11 +472,12 @@ async function showHighscores() {
 
         if (data.success && data.highscores && data.highscores.length > 0) {
             listContainer.innerHTML = '';
+            // Already sorted by score descending in the API
             data.highscores.slice(0, 10).forEach((item, index) => {
                 const scoreItem = document.createElement('div');
                 scoreItem.className = 'highscore-item' + (index < 3 ? ' top-3' : '');
                 scoreItem.innerHTML = `
-                    <span class="highscore-rank">${index + 1}</span>
+                    <span class="highscore-rank">#${index + 1}</span>
                     <span class="highscore-name">${escapeHtml(item.name)}</span>
                     <span class="highscore-score">${item.score}</span>
                 `;
@@ -500,8 +505,8 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Load high score from localStorage
-function loadHighScore() {
+// Load high score from localStorage (fallback)
+function loadHighScoreFromLocal() {
     const saved = localStorage.getItem('highScore');
     if (saved) {
         highScore = parseInt(saved);
@@ -510,7 +515,8 @@ function loadHighScore() {
 }
 
 // Initialize
-loadHighScore();
+// Try to load from API first, fall back to localStorage
+loadHighScoreFromAPI();
 
 // Draw initial screen
 ctx.fillStyle = '#87CEEB';
