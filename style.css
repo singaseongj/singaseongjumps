@@ -426,17 +426,6 @@ body.dark-mode #playerName:focus {
     box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
 }
 
-.input-error {
-    margin-top: 8px;
-    color: #dc2626;
-    font-size: 14px;
-    min-height: 18px;
-}
-
-body.dark-mode .input-error {
-    color: #fca5a5;
-}
-
 .submit-btn {
     width: 100%;
     padding: 15px;
