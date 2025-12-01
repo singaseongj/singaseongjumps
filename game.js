@@ -26,9 +26,9 @@ let obstacleInterval = 100;
 let animationFrame = 0;
 
 const MAX_GAME_SPEED = 12;
-const SPEED_INCREMENT = 0.003;
+const SPEED_INCREMENT = 0.0003;
 const MIN_OBSTACLE_INTERVAL = 60;
-const OBSTACLE_INTERVAL_DECREMENT = 0.02;
+const OBSTACLE_INTERVAL_DECREMENT = 0.002;
 
 // Chicken character
 const chicken = {
@@ -125,24 +125,33 @@ function unduck() {
 
 // Start game
 function startGame() {
+    resetGameState();
     gameRunning = true;
-    gameOver = false;
-    score = 0;
-    gameSpeed = 5;
-    obstacleInterval = 100;
-    obstacles = [];
-    obstacleTimer = 0;
-    chicken.y = chicken.normalY;
-    chicken.velocity = 0;
-    chicken.jumping = false;
-    chicken.ducking = false;
-    document.getElementById('gameOverScreen').classList.remove('active');
     gameLoop();
 }
 
 // Restart game
 function restartGame() {
     startGame();
+}
+
+// Reset game to its initial state without starting the loop
+function resetGameState() {
+    cancelAnimationFrame(animationId);
+    gameRunning = false;
+    gameOver = false;
+    score = 0;
+    gameSpeed = 5;
+    obstacleInterval = 100;
+    obstacles = [];
+    obstacleTimer = 0;
+    animationFrame = 0;
+    chicken.y = chicken.normalY;
+    chicken.velocity = 0;
+    chicken.jumping = false;
+    chicken.ducking = false;
+    document.getElementById('gameOverScreen').classList.remove('active');
+    updateScore();
 }
 
 // Update chicken physics
@@ -549,7 +558,7 @@ function showHighscores() {
 // Hide highscores
 function hideHighscores() {
     document.getElementById('highscoreScreen').classList.remove('active');
-    startGame();
+    showStartScreen();
 }
 
 // Escape HTML to prevent XSS
@@ -573,16 +582,20 @@ function loadHighScoreFromLocal() {
 loadHighScoreFromAPI();
 
 // Draw initial screen
-ctx.fillStyle = '#87CEEB';
-ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-drawClouds();
-drawGround();
-drawChicken();
+function showStartScreen() {
+    resetGameState();
+    ctx.fillStyle = '#87CEEB';
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+    drawClouds();
+    drawGround();
+    drawChicken();
 
-// Start message
-ctx.fillStyle = '#2D3142';
-ctx.font = 'bold 24px Fredoka, sans-serif';
-ctx.textAlign = 'center';
-ctx.fillText('Press SPACE or Click to Start!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-ctx.font = '16px Fredoka, sans-serif';
-ctx.fillText('SPACE/TAP: Jump | DOWN/TAP: Duck', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 40);
+    ctx.fillStyle = '#2D3142';
+    ctx.font = 'bold 24px Fredoka, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Press SPACE or Click to Start!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+    ctx.font = '16px Fredoka, sans-serif';
+    ctx.fillText('SPACE/TAP: Jump | DOWN/TAP: Duck', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 40);
+}
+
+showStartScreen();
