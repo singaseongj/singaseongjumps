@@ -24,6 +24,7 @@ body {
     justify-content: center;
     align-items: center;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden;
     padding: 10px;
 }
@@ -488,17 +489,19 @@ body::before {
 
 @media (max-width: 600px) {
     body {
-        padding: 5px;
+        padding: 0;
+        min-height: 100dvh;
     }
 
     .game-container {
-        padding: 10px;
+        padding: 12px 10px 14px;
         width: 100vw;
-        height: 100vh;
+        height: 100dvh;
         max-width: none;
         border-radius: 0;
         display: flex;
         flex-direction: column;
+        gap: 10px;
     }
 
     .game-header {
@@ -514,17 +517,18 @@ body::before {
     #gameCanvas {
         flex: 1;
         height: auto;
+        min-height: 68vh;
     }
 
     .mobile-controls {
-        gap: 10px;
-        margin-top: 10px;
+        gap: 8px;
+        margin-top: 4px;
         flex-shrink: 0;
     }
 
     .control-btn {
-        max-width: 120px;
-        padding: 12px;
+        max-width: 100px;
+        padding: 10px;
         font-size: 14px;
         gap: 4px;
         border-radius: 10px;
