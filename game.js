@@ -9,7 +9,7 @@ canvas.height = CANVAS_HEIGHT;
 
 // API configuration
 const API_URL = 'https://script.google.com/macros/s/AKfycbwor_TGA2cHvWrIBT20FbAUJNT_qHuTAbs1A99wWqDRQP_Z0l35IVWuomMzhPZWB17v/exec';
-const SECRET = document.body?.dataset?.scoreHash || 'SCORE_KEY';
+const SECRET = document.body?.dataset?.scoreHash || '';
 
 // Game state
 let gameRunning = false;
@@ -404,9 +404,14 @@ function endGame() {
 // Submit score to API
 async function submitScore() {
     const playerName = document.getElementById('playerName').value.trim();
-    
+
     if (!playerName) {
         alert('Please enter your name!');
+        return;
+    }
+
+    if (!SECRET) {
+        alert('Score service is unavailable right now. Please try again later.');
         return;
     }
     
@@ -415,45 +420,28 @@ async function submitScore() {
     submitBtn.textContent = 'Submitting...';
     
     try {
-        // Use GET method with query parameters for better compatibility
-        const url = `${API_URL}?action=addScore&name=${encodeURIComponent(playerName)}&score=${Math.floor(score)}&secret=${SECRET}`;
-        
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'no-cors' // This helps with CORS issues
+        const response = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                name: playerName,
+                score: Math.floor(score),
+                secret: SECRET,
+                action: 'addScore'
+            })
         });
-        
-        // With no-cors mode, we can't read the response, so we assume success
-        alert('Score submitted successfully!');
-        document.getElementById('playerName').value = '';
-        
+
+        const data = await response.json();
+
+        if (data.success) {
+            alert('Score submitted successfully!');
+            document.getElementById('playerName').value = '';
+        } else {
+            throw new Error(data.error || 'Unknown error');
+        }
     } catch (error) {
         console.error('Error submitting score:', error);
-        
-        // Try alternative POST method as fallback
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: playerName,
-                    score: Math.floor(score),
-                    secret: SECRET
-                })
-            });
-            
-            const data = await response.json();
-            
-            if (data.status === 'success') {
-                alert('Score submitted successfully!');
-                document.getElementById('playerName').value = '';
-            } else {
-                alert('Failed to submit score: ' + (data.message || 'Unknown error'));
-            }
-        } catch (postError) {
-            console.error('POST method also failed:', postError);
-            alert('Failed to submit score. Please try again.');
-        }
+        alert('Failed to submit score. Please try again.');
     } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Score';
@@ -464,17 +452,22 @@ async function submitScore() {
 async function showHighscores() {
     document.getElementById('highscoreScreen').classList.add('active');
     document.getElementById('gameOverScreen').classList.remove('active');
-    
+
     const listContainer = document.getElementById('highscoreList');
     listContainer.innerHTML = '<div class="loading">Loading highscores...</div>';
+
+    if (!SECRET) {
+        listContainer.innerHTML = '<div class="loading">Highscores unavailable</div>';
+        return;
+    }
     
     try {
-        const response = await fetch(`${API_URL}?action=getScores`);
+        const response = await fetch(`${API_URL}?action=getScores&secret=${encodeURIComponent(SECRET)}`);
         const data = await response.json();
-        
-        if (data.status === 'success' && data.scores && data.scores.length > 0) {
+
+        if (data.success && data.highscores && data.highscores.length > 0) {
             listContainer.innerHTML = '';
-            data.scores.slice(0, 10).forEach((item, index) => {
+            data.highscores.slice(0, 10).forEach((item, index) => {
                 const scoreItem = document.createElement('div');
                 scoreItem.className = 'highscore-item' + (index < 3 ? ' top-3' : '');
                 scoreItem.innerHTML = `
