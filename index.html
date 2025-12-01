@@ -2,13 +2,21 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 핀치 줌 방지 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- 웹앱 모드 -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+    <!-- iOS 상태바 스타일 -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Singaseong Jumps</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body data-score-hash="ef9b9dd5820f4a98c58cb19a2da0f8a1c0f9084acecaabbea620dd6fb2e52cb4">
-    <div class="game-container">
-        <div class="game-header">
+    <main class="game-container">
+        <header class="game-header">
             <div class="score-display">
                 <div class="label">Score</div>
                 <div id="score">0</div>
@@ -18,7 +26,7 @@
                 <div class="label">High Score</div>
                 <div id="highscore">0</div>
             </div>
-        </div>
+        </header>
 
         <canvas id="gameCanvas"></canvas>
 
@@ -60,7 +68,7 @@
                 <button id="backBtn" class="menu-btn back-btn">Back to Game</button>
             </div>
         </div>
-    </div>
+    </main>
 
     <script src="game.js"></script>
 </body>
