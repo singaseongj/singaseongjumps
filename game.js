@@ -8,7 +8,7 @@ canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
 // API configuration
-const API_URL = 'https://script.google.com/macros/s/AKfycbzYVU6JNYUr0aOKsOWFRK4TkJ5E9dsTvl4IK5AwxtNulvbHaAmbm2BoEkMX2pCo4GMl/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbyXBKcJcKVfT1IppcvNEUu-bQxiaUoNJLN2WMffGWJ-b80lMBAobrnSUXI-NuYIwjNu/exec';
 const DEFAULT_SCORE_HASH = 'ef9b9dd5820f4a98c58cb19a2da0f8a1c0f9084acecaabbea620dd6fb2e52cb4';
 const SECRET = document.body?.dataset?.scoreHash || DEFAULT_SCORE_HASH;
 
@@ -25,10 +25,11 @@ let obstacleTimer = 0;
 let obstacleInterval = 100;
 let animationFrame = 0;
 
-const MAX_GAME_SPEED = 12;
-const SPEED_INCREMENT = 0.0003;
-const MIN_OBSTACLE_INTERVAL = 60;
-const OBSTACLE_INTERVAL_DECREMENT = 0.002;
+// Speed progression constants
+const MAX_GAME_SPEED = 15;
+const SPEED_INCREMENT = 0.001;
+const MIN_OBSTACLE_INTERVAL = 50;
+const OBSTACLE_INTERVAL_DECREMENT = 0.005;
 
 // Chicken character
 const chicken = {
@@ -125,33 +126,24 @@ function unduck() {
 
 // Start game
 function startGame() {
-    resetGameState();
     gameRunning = true;
-    gameLoop();
-}
-
-// Restart game
-function restartGame() {
-    startGame();
-}
-
-// Reset game to its initial state without starting the loop
-function resetGameState() {
-    cancelAnimationFrame(animationId);
-    gameRunning = false;
     gameOver = false;
     score = 0;
     gameSpeed = 5;
     obstacleInterval = 100;
     obstacles = [];
     obstacleTimer = 0;
-    animationFrame = 0;
     chicken.y = chicken.normalY;
     chicken.velocity = 0;
     chicken.jumping = false;
     chicken.ducking = false;
     document.getElementById('gameOverScreen').classList.remove('active');
-    updateScore();
+    gameLoop();
+}
+
+// Restart game
+function restartGame() {
+    startGame();
 }
 
 // Update chicken physics
@@ -189,7 +181,15 @@ function createObstacle() {
     } else if (type === 'flyingBox') {
         obstacle.width = 40;
         obstacle.height = 40;
-        obstacle.y = ground.y - 70; // Low enough to require ducking (not jumping)
+        // Random height variation: sometimes low (duck), sometimes medium-high (jump)
+        const heights = [
+            ground.y - 70,   // Low - must duck
+            ground.y - 75,   // Low-medium - must duck
+            ground.y - 95,   // Medium - can duck or jump
+            ground.y - 110,  // Medium-high - should jump
+            ground.y - 120   // High - must jump
+        ];
+        obstacle.y = heights[Math.floor(Math.random() * heights.length)];
     }
 
     obstacles.push(obstacle);
@@ -558,7 +558,7 @@ function showHighscores() {
 // Hide highscores
 function hideHighscores() {
     document.getElementById('highscoreScreen').classList.remove('active');
-    showStartScreen();
+    document.getElementById('gameOverScreen').classList.add('active');
 }
 
 // Escape HTML to prevent XSS
@@ -582,20 +582,16 @@ function loadHighScoreFromLocal() {
 loadHighScoreFromAPI();
 
 // Draw initial screen
-function showStartScreen() {
-    resetGameState();
-    ctx.fillStyle = '#87CEEB';
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-    drawClouds();
-    drawGround();
-    drawChicken();
+ctx.fillStyle = '#87CEEB';
+ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+drawClouds();
+drawGround();
+drawChicken();
 
-    ctx.fillStyle = '#2D3142';
-    ctx.font = 'bold 24px Fredoka, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('Press SPACE or Click to Start!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
-    ctx.font = '16px Fredoka, sans-serif';
-    ctx.fillText('SPACE/TAP: Jump | DOWN/TAP: Duck', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 40);
-}
-
-showStartScreen();
+// Start message
+ctx.fillStyle = '#2D3142';
+ctx.font = 'bold 24px Fredoka, sans-serif';
+ctx.textAlign = 'center';
+ctx.fillText('Press SPACE or Click to Start!', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2);
+ctx.font = '16px Fredoka, sans-serif';
+ctx.fillText('SPACE/TAP: Jump | DOWN/TAP: Duck', CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 40);
