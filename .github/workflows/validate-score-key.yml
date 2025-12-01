@@ -1,5 +1,9 @@
 name: Validate score key hash
 
+# Set permissions to allow the workflow to write/commit changes
+permissions:
+  contents: write
+
 on:
   push:
     branches: ["main", "master"]
@@ -13,6 +17,12 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+      
+      # --- FIX 1: Install ripgrep (rg) ---
+      - name: Install ripgrep (rg) for verification
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ripgrep
 
       - name: Fail if SCORE_KEY secret is not available
         env:
@@ -31,13 +41,25 @@ jobs:
           HASH=$(printf '%s' "${SCORE_KEY}" | sha256sum | cut -d' ' -f1)
           echo "hash=${HASH}" >> "$GITHUB_OUTPUT"
 
+      # --- FIX 2: Use an alternative SED delimiter (@) ---
       - name: Inject hash into index.html
         env:
           SCORE_KEY_HASH: ${{ steps.hash.outputs.hash }}
         run: |
           if grep -q "__SCORE_KEY_HASH__" index.html; then
-            sed -i "s/__SCORE_KEY_HASH__/${SCORE_KEY_HASH}/g" index.html
+            # Using '@' instead of '/' as the delimiter for safety
+            sed -i "s@__SCORE_KEY_HASH__@${SCORE_KEY_HASH}@g" index.html
           fi
+
+      # --- FIX 3: Commit the changed file for deployment ---
+      - name: Commit index.html changes and push
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Build: Inject SCORE_KEY hash"
+          branch: ${{ github.ref_name }} # Use the current branch name (e.g., main)
+          file_pattern: 'index.html'
+          # Set `skip_dirty_check: true` to ensure the file is always committed if changed
+          skip_dirty_check: true 
 
       - name: Verify hashed secret in index.html
         env:
@@ -48,11 +70,13 @@ jobs:
             echo "data-score-hash attribute not found in index.html"
             exit 1
           fi
+          # Note: grep -oP is a GNU extension, but should work on ubuntu-latest
           ACTUAL_HASH=$(grep -oP 'data-score-hash="\K[^\"]+' index.html)
           if [ "${ACTUAL_HASH}" != "${EXPECTED_HASH}" ]; then
             echo "Hash mismatch. Expected ${EXPECTED_HASH} but found ${ACTUAL_HASH}."
             exit 1
           fi
+          # rg (ripgrep) is now installed and should work here:
           if rg --quiet --fixed-strings "${SCORE_KEY}" game.js; then
             echo "Hardcoded secret detected in game.js"
             exit 1
