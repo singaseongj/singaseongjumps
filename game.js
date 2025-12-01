@@ -8,9 +8,12 @@ canvas.width = CANVAS_WIDTH;
 canvas.height = CANVAS_HEIGHT;
 
 // API configuration
-const API_URL = 'https://script.google.com/macros/s/AKfycbzEQoVQyPCJM8AldCCfKg7IjohALeJSQCQgzH4GWa5FaxUz3g079RaU_0sbrw58QCA-/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzYVU6JNYUr0aOKsOWFRK4TkJ5E9dsTvl4IK5AwxtNulvbHaAmbm2BoEkMX2pCo4GMl/exec';
 const DEFAULT_SCORE_HASH = 'ef9b9dd5820f4a98c58cb19a2da0f8a1c0f9084acecaabbea620dd6fb2e52cb4';
 const SECRET = document.body?.dataset?.scoreHash || DEFAULT_SCORE_HASH;
+
+// Debug: Log the secret being used
+console.log('Using SECRET:', SECRET);
 
 // Game state
 let gameRunning = false;
@@ -172,7 +175,7 @@ function createObstacle() {
     } else if (type === 'flyingBox') {
         obstacle.width = 40;
         obstacle.height = 40;
-        obstacle.y = ground.y - 80; // Lower height - requires ducking to avoid
+        obstacle.y = ground.y - 70; // Low enough to require ducking (not jumping)
     }
 
     obstacles.push(obstacle);
@@ -428,6 +431,8 @@ function submitScore() {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Score';
         
+        console.log('Score submission response:', data);
+        
         if (data.success) {
             alert('Score submitted successfully!');
             document.getElementById('playerName').value = '';
@@ -440,7 +445,10 @@ function submitScore() {
     // Create script tag for JSONP
     const script = document.createElement('script');
     script.id = callbackName;
-    script.src = `${API_URL}?action=addScore&name=${encodeURIComponent(playerName)}&score=${Math.floor(score)}&secret=${encodeURIComponent(SECRET)}&callback=${callbackName}`;
+    const url = `${API_URL}?action=addScore&name=${encodeURIComponent(playerName)}&score=${Math.floor(score)}&secret=${encodeURIComponent(SECRET)}&callback=${callbackName}`;
+    
+    console.log('Submitting score to:', url);
+    script.src = url;
     
     // Handle errors
     script.onerror = function() {
@@ -448,6 +456,7 @@ function submitScore() {
         script.remove();
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit Score';
+        console.error('Script loading failed');
         alert('Failed to submit score. Please try again.');
     };
     
