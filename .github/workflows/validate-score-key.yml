@@ -1,0 +1,52 @@
+name: Validate score key hash
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+
+jobs:
+  validate-hash:
+    name: Ensure SCORE_KEY hash matches index payload
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Fail if SCORE_KEY secret is not available
+        env:
+          SCORE_KEY: ${{ secrets.SCORE_KEY }}
+        run: |
+          if [ -z "${SCORE_KEY}" ]; then
+            echo "SCORE_KEY secret is not configured."
+            exit 1
+          fi
+
+      - name: Compute SCORE_KEY hash
+        id: hash
+        env:
+          SCORE_KEY: ${{ secrets.SCORE_KEY }}
+        run: |
+          HASH=$(printf '%s' "${SCORE_KEY}" | sha256sum | cut -d' ' -f1)
+          echo "hash=${HASH}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify hashed secret in index.html
+        env:
+          EXPECTED_HASH: ${{ steps.hash.outputs.hash }}
+        run: |
+          if ! grep -q 'data-score-hash' index.html; then
+            echo "data-score-hash attribute not found in index.html"
+            exit 1
+          fi
+          ACTUAL_HASH=$(grep -oP 'data-score-hash="\K[^"]+' index.html)
+          if [ "${ACTUAL_HASH}" != "${EXPECTED_HASH}" ]; then
+            echo "Hash mismatch. Expected ${EXPECTED_HASH} but found ${ACTUAL_HASH}."
+            exit 1
+          fi
+          if grep -q 'umps7170!' game.js; then
+            echo "Hardcoded secret detected in game.js"
+            exit 1
+          fi
+
+      - name: Display hash validation result
+        run: echo "Index file hash matches SCORE_KEY secret."
