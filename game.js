@@ -24,11 +24,12 @@ canvas.height = CANVAS_HEIGHT;
 
 // API configuration
 const API_URL = 'https://script.google.com/macros/s/AKfycbyXBKcJcKVfT1IppcvNEUu-bQxiaUoNJLN2WMffGWJ-b80lMBAobrnSUXI-NuYIwjNu/exec';
-const DEFAULT_SCORE_HASH = 'ef9b9dd5820f4a98c58cb19a2da0f8a1c0f9084acecaabbea620dd6fb2e52cb4';
-const SECRET = document.body?.dataset?.scoreHash || DEFAULT_SCORE_HASH;
+const SCORE_HASH_PLACEHOLDER = '__SCORE_KEY_HASH__';
+const SECRET = document.body?.dataset?.scoreHash;
 
-// Debug: Log the secret being used
-console.log('Using SECRET:', SECRET);
+if (!SECRET || SECRET === SCORE_HASH_PLACEHOLDER) {
+    throw new Error('Score hash is not configured. Please set SCORE_KEY in the environment.');
+}
 
 // Game state
 let gameRunning = false;
@@ -572,7 +573,7 @@ function submitScore() {
     script.id = callbackName;
     const url = `${API_URL}?action=addScore&name=${encodeURIComponent(playerName)}&score=${Math.floor(score)}&secret=${encodeURIComponent(SECRET)}&callback=${callbackName}`;
     
-    console.log('Submitting score to:', url);
+    console.log('Submitting score request');
     script.src = url;
     
     // Handle errors
