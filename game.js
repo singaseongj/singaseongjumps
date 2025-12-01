@@ -41,9 +41,17 @@ async function hashSecret(secretKey) {
 }
 
 async function initializeSecret() {
-    const hashedSecret = document.body?.dataset?.scoreHash;
-    if (hashedSecret && hashedSecret !== SCORE_HASH_PLACEHOLDER) {
-        SECRET = hashedSecret;
+    const { scoreHash, scoreKey } = document.body?.dataset || {};
+
+    // If the raw secret key is provided, hash it so we never expose the plain key in requests.
+    if (scoreKey && scoreKey !== SCORE_KEY_PLACEHOLDER) {
+        SECRET = await hashSecret(scoreKey);
+        return SECRET;
+    }
+
+    // Fallback to a precomputed hash if provided directly.
+    if (scoreHash && scoreHash !== SCORE_HASH_PLACEHOLDER) {
+        SECRET = scoreHash;
         return SECRET;
     }
 
@@ -731,7 +739,9 @@ async function showHighscores() {
 // Hide highscores
 function hideHighscores() {
     document.getElementById('highscoreScreen').classList.remove('active');
-    document.getElementById('gameOverScreen').classList.add('active');
+    document.getElementById('gameOverScreen').classList.remove('active');
+    gameOver = false;
+    gameRunning = false;
 }
 
 // Escape HTML to prevent XSS
